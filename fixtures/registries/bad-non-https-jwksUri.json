@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "defaults": {
+    "clockSkewSeconds": 30,
+    "maxTokenAgeSeconds": 900,
+    "requiredClaims": ["iss", "aud", "sub", "exp", "iat"]
+  },
+  "issuers": [
+    {
+      "name": "test-issuer",
+      "issuer": "https://auth.example.com/",
+      "jwksUri": "http://auth.example.com/.well-known/jwks.json",
+      "audiences": ["test-api"],
+      "allowedAlgs": ["RS256"]
+    }
+  ]
+}
