@@ -28,7 +28,7 @@ import {
   KidNotFoundInJwksError,
   WaitPeriodNotYetEndedJwkError,
 } from "./error.js";
-import { JwtPayload } from "./jwt-model.js";
+import { JwtPayload, JwtHeader } from "./jwt-model.js";
 
 /**
  * Secure JWT verification error with stable error taxonomy
@@ -204,15 +204,13 @@ export class SecureJwtVerifier {
         );
       }
 
-      let header: any;
-      let unverifiedPayload: any;
+      let header: JwtHeader;
+      let unverifiedPayload: JwtPayload;
       try {
-        header = JSON.parse(
-          Buffer.from(parts[0], "base64url").toString("utf-8")
-        );
-        unverifiedPayload = JSON.parse(
-          Buffer.from(parts[1], "base64url").toString("utf-8")
-        );
+        const headerJson = Buffer.from(parts[0], "base64url").toString("utf-8");
+        const payloadJson = Buffer.from(parts[1], "base64url").toString("utf-8");
+        header = JSON.parse(headerJson) as JwtHeader;
+        unverifiedPayload = JSON.parse(payloadJson) as JwtPayload;
       } catch (e) {
         throw new SecureJwtVerificationError(
           "Failed to parse JWT structure",
