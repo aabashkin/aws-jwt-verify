@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "defaults": {
+    "clockSkewSeconds": 30,
+    "maxTokenAgeSeconds": 900,
+    "requiredClaims": ["iss", "aud", "sub", "exp", "iat"]
+  },
+  "issuers": [
+    {
+      "name": "ptp-prod",
+      "issuer": "https://auth.prod.example.com/",
+      "jwksUri": "https://auth.prod.example.com/.well-known/jwks.json",
+      "audiences": ["ptp-api"],
+      "allowedAlgs": ["RS256"],
+      "clockSkewSeconds": 30,
+      "maxTokenAgeSeconds": 900,
+      "requiredClaims": ["iss", "aud", "sub", "exp", "iat"],
+      "deny": {
+        "headerTypAllowlist": ["JWT", "at+jwt"]
+      }
+    },
+    {
+      "name": "ptp-staging",
+      "issuer": "https://auth.staging.example.com/",
+      "jwksUri": "https://auth.staging.example.com/.well-known/jwks.json",
+      "audiences": ["ptp-api", "ptp-web"],
+      "allowedAlgs": ["ES256"]
+    },
+    {
+      "name": "partner-corp",
+      "issuer": "https://sso.partner.example.org/",
+      "jwksUri": "https://sso.partner.example.org/oauth2/jwks",
+      "audiences": ["partner-integration"],
+      "allowedAlgs": ["EdDSA"],
+      "clockSkewSeconds": 60,
+      "maxTokenAgeSeconds": 600
+    }
+  ]
+}
