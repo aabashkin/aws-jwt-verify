@@ -61,12 +61,29 @@ const noopLogger: Logger = {
 /**
  * Secure JWT Verifier Wrapper
  * 
- * Provides secure-by-default JWT verification with:
+ * This class wraps the existing aws-jwt-verify library's JwtVerifier to provide
+ * additional security enforcement through policy-driven configuration.
+ * 
+ * Architecture:
+ * - Delegates core JWT verification to JwtVerifier from aws-jwt-verify
+ * - Adds security layer: algorithm pinning, max token age, policy validation
+ * - Provides stable error taxonomy and observability hooks
+ * 
+ * What's delegated to aws-jwt-verify:
+ * - Signature verification (RSA, ECDSA, EdDSA)
+ * - JWKS fetching and caching
+ * - exp/nbf claim validation
+ * - Issuer validation
+ * 
+ * What this wrapper adds:
  * - Policy-driven configuration (no runtime overrides)
- * - Fail-closed behavior
- * - Bounded JWKS refresh
- * - Algorithm pinning per issuer
- * - Max token age enforcement
+ * - Fail-closed behavior (strict validation at startup)
+ * - Algorithm pinning (exactly one per issuer)
+ * - Max token age enforcement (via iat, independent of exp)
+ * - Audience allowlist enforcement
+ * - Required claims validation
+ * - Stable error taxonomy for all failure modes
+ * - Metrics and logging hooks
  */
 export class SecureJwtVerifier {
   private registry: PolicyRegistry;
@@ -112,12 +129,13 @@ export class SecureJwtVerifier {
       throw error;
     }
 
-    // Create verifiers for each issuer
+    // Create verifiers for each issuer using the underlying aws-jwt-verify library
+    // Each verifier wraps JwtVerifier.create() with policy-driven configuration
     for (const issuerPolicy of this.registry.issuers) {
       const verifier = JwtVerifier.create({
         issuer: issuerPolicy.issuer,
         jwksUri: issuerPolicy.jwksUri,
-        audience: null, // We'll validate audience ourselves
+        audience: null, // We'll validate audience ourselves to enforce allowlist
       });
 
       this.verifiers.set(issuerPolicy.name, verifier);
@@ -140,6 +158,7 @@ export class SecureJwtVerifier {
         async ([issuerName, verifier]) => {
           const issuerStart = Date.now();
           try {
+            // Delegate to underlying JwtVerifier.hydrate() from aws-jwt-verify
             await verifier.hydrate();
             const duration = (Date.now() - issuerStart) / 1000;
             this.metrics.incrementCounter("jwks_hydrate_total", {
@@ -253,11 +272,12 @@ export class SecureJwtVerifier {
         throw new Error(`No verifier found for issuer ${issuerName}`);
       }
 
-      // Perform signature verification
+      // Delegate signature verification to the underlying aws-jwt-verify library
+      // The library handles: signature verification, JWKS fetching, caching, exp/nbf checks
       let payload: JwtPayload;
       try {
         payload = await verifier.verify(jwt, {
-          audience: null, // We validate audience separately
+          audience: null, // We validate audience separately to enforce policy allowlist
           graceSeconds:
             issuerPolicy.clockSkewSeconds ??
             this.registry.defaults.clockSkewSeconds,
@@ -265,6 +285,8 @@ export class SecureJwtVerifier {
       } catch (error) {
         throw this.mapError(error, issuerName);
       }
+
+      // Additional security checks beyond aws-jwt-verify's built-in validation:
 
       // Validate audience
       const audiences = issuerPolicy.audiences;

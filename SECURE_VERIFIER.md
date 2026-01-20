@@ -2,6 +2,25 @@
 
 A secure-by-default JWT verification module for general OIDC issuers in Node.js, using asymmetric signatures and JWKS, built on `awslabs/aws-jwt-verify`.
 
+## Architecture
+
+This module **wraps** the existing `aws-jwt-verify` library to provide additional security enforcement:
+
+**What's delegated to aws-jwt-verify:**
+- Core JWT signature verification (RSA, ECDSA, EdDSA)
+- JWKS fetching and caching (with built-in rate limiting)
+- exp/nbf claim validation
+- Issuer validation
+
+**What this wrapper adds:**
+- Policy-driven configuration with strict startup validation
+- Algorithm pinning (exactly one algorithm per issuer)
+- Max token age enforcement (via `iat`, independent of `exp`)
+- Audience allowlist enforcement
+- Required claims validation
+- Stable error taxonomy for all failure modes
+- Metrics and structured logging hooks
+
 ## Features
 
 - **Fail-closed by default**: No runtime "helpful" bypasses
