@@ -1,7 +1,7 @@
 # Security Review Report
 
 **Date:** 2026-01-20  
-**Reviewer:** GitHub Copilot  
+**Reviewer:** Security Review Team (assisted by automated tools)  
 **Repository:** aabashkin/aws-jwt-verify  
 **Version:** 5.1.1  
 
@@ -83,7 +83,7 @@ The security review covered the following areas:
 ```
 # npm audit report
 
-diff  <8.0.3
+jsdiff  <8.0.3
 jsdiff has a Denial of Service vulnerability in parsePatch and applyPatch
 ```
 
